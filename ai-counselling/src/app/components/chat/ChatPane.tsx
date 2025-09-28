@@ -100,7 +100,7 @@ const mdComponents: Components = {
 /* ---------- UI ---------- */
 
 export default function ChatPane({
-  onSend,
+
   initialMessages = [],
 }: ChatPaneProps): JSX.Element {
   const [messages, setMessages] = useState<Message[]>(() => [...initialMessages]);
@@ -109,7 +109,7 @@ export default function ChatPane({
 
   const listRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
- const { isLoaded, user } = useUser();
+ const {user } = useUser();
   // simple id generator
   const nextId = useMemo(() => {
     let n = 0;
