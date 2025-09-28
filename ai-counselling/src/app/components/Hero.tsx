@@ -2,10 +2,13 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useUser } from '@clerk/nextjs';
 import VoiceCircle from './VoiceCircle';
 import ChatPane from './chat/ChatPane';
 import ModeToggle from './ModeToggle';
+import VideoRecorder from '@/app/components/VideoRecorder'; // <-- add
+import { useUser } from '@clerk/nextjs';
+
+
 
 type ModeChoice = 'text' | 'voice' | 'video';
 
@@ -18,14 +21,13 @@ type PublicMetadataShape = {
 function coerceMode(s: string | undefined | null): ModeChoice {
   const v = String(s ?? '').toLowerCase();
   if (v === 'text' || v === 'voice' || v === 'video') return v;
-  if (v === 'multimodal') return 'voice'; // legacy alias
+  if (v === 'multimodal') return 'voice';
   return 'voice';
 }
 
 export default function Hero() {
   const { user, isLoaded } = useUser();
 
-  // Prefer nested preferences.mode → then flat preferredMode/mode
   const mode: ModeChoice = useMemo(() => {
     if (!isLoaded) return 'voice';
     const pm = (user?.publicMetadata ?? {}) as PublicMetadataShape;
@@ -45,7 +47,6 @@ export default function Hero() {
             management—guided by evidence, designed for real life.
           </p>
 
-          {/* Single source of truth: imported ModeToggle does server-action + hard reload */}
           <div className="mt-6">
             <ModeToggle value={mode} disabled={!isLoaded} />
           </div>
@@ -59,10 +60,8 @@ export default function Hero() {
           ) : mode === 'voice' ? (
             <VoiceCircle backendUrl="/api/audio" />
           ) : (
-            <div className="rounded-xl border border-zinc-200 bg-white/60 p-6 text-center">
-              <p className="text-sm text-zinc-600">
-                Video mode coming soon. You can switch to voice or text in settings.
-              </p>
+            <div className="w-full max-w-md rounded-xl border border-zinc-200 bg-white/60 p-6">
+              <VideoRecorder userId = {user?.id} />
             </div>
           )}
         </div>

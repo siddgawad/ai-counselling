@@ -16,7 +16,7 @@ function pickSupportedMime(): string {
   return 'video/webm'; // safest general fallback
 }
 
-export default function VideoRecorder() {
+export default function VideoRecorder({ userId }: { userId?: string }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [recording, setRecording] = useState<boolean>(false);
@@ -28,6 +28,7 @@ export default function VideoRecorder() {
     const file = new File([blob], filename, { type: blob.type || 'video/webm' });
     const formData = new FormData();
     formData.append('file', file);
+    if (userId) formData.append('userId', userId);
     setStatus('Uploading to S3...');
     try {
       const res = await fetch('/api/uploadVideo', { method: 'POST', body: formData });
