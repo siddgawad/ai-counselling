@@ -34,3 +34,9 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Description
+
+This is a virtual mental-health companion that supports people through text, voice, and video. Beyond conversation, it analyzes facial expressions, vocal tone, and text sentiment to form a more complete picture of how you’re doing. With that context, it offers supportive reflections, grounding exercises, and resource suggestions—aimed at helping you feel better and make informed choices.
+The experience is gentle, private, and accessible, especially for people who might hesitate to seek help in person.
+Important: The app is not a substitute for professional therapy. It’s designed to complement care and encourage seeking licensed help when appropriate.
