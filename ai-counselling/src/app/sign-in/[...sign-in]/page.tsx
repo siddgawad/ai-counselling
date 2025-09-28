@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { upsertUserFromClerk } from '@/db/users';
 
 export default async function SignInRedirector() {
+
   const { userId, redirectToSignIn } = await auth();
   if (!userId) return redirectToSignIn({ returnBackUrl: '/sign-in/' });
 
