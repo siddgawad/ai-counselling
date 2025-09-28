@@ -16,6 +16,8 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import type { JSX } from 'react';
 import axios from "axios";
+import { useUser } from '@clerk/nextjs';
+
 
 /* ---------- Strong types ---------- */
 
@@ -46,6 +48,10 @@ function linkifyText(s: string): string {
     return `[${m}](${href})`;
   });
 }
+
+ 
+
+
 
 // Typed markdown renderers (no `any`, no unused `node`)
 const mdComponents: Components = {
@@ -103,7 +109,7 @@ export default function ChatPane({
 
   const listRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
-
+ const { isLoaded, user } = useUser();
   // simple id generator
   const nextId = useMemo(() => {
     let n = 0;
@@ -196,7 +202,7 @@ const handleSend = async (text: string): Promise<void> => {
     // Call backend
     const res = await axios.post("http://localhost:8000/respond", null, {
      
-      params: { msg: trimmed, user_id: "user_123" },
+      params: { msg: trimmed, user_id: user?.id },
     });
 
     const replyText: string = res.data?.final_response || "No response generated.";
