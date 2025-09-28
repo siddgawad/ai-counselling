@@ -1,6 +1,4 @@
 import Hero from "@/app/components/Hero";
-import Programs from "@/app/components/Programs";
-import Pricing from "@/app/components/Pricing";
 import CTASection from "@/app/components/CTASection";
 
 import Navbar from "../app/components/Navbar";

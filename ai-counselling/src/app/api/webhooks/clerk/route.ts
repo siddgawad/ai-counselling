@@ -22,7 +22,7 @@ const UserDataSchema = z.object({
   id: z.string(),
   first_name: z.string().nullish(),
   last_name: z.string().nullish(),
-  image_url: z.string().url().nullish(),
+  image_url: z.url().nullish(),
   primary_email_address_id: z.string().nullish(),
   email_addresses: z.array(EmailSchema),
 });
