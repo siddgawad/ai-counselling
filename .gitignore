@@ -1,0 +1,37 @@
+# --- Secrets ---
+.env
+.env.*           # e.g., .env.local, .env.production
+
+# --- OS/Editor ---
+.DS_Store
+.idea/
+.vscode/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.mypy_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+.hypothesis/
+.ipynb_checkpoints/
+
+# --- Virtual envs ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- Logs & misc ---
+*.log
+*.tmp
+EOF
