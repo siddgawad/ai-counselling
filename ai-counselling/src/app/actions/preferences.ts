@@ -2,42 +2,65 @@
 'use server';
 
 import { auth, clerkClient } from '@clerk/nextjs/server';
-import { revalidatePath } from 'next/cache';
+
+/* ---------- Types ---------- */
 
 export type ModeChoice = 'text' | 'voice' | 'video';
 
-function isMode(x: unknown): x is ModeChoice {
-  return x === 'text' || x === 'voice' || x === 'video';
+type PreferencesShape = {
+  mode?: string;
+};
+
+type PublicMetadataShape = {
+  preferredMode?: string;
+  mode?: string; // legacy
+  preferences?: PreferencesShape;
+};
+
+/* ---------- Helpers ---------- */
+
+function isModeChoice(v: string): v is ModeChoice {
+  return v === 'text' || v === 'voice' || v === 'video';
 }
 
-/**
- * Form-action: expects a field named "mode" with value 'text' | 'voice' | 'video'.
- */
-export async function setPreferredModeAction(formData: FormData): Promise<void> {
+function coerceMode(v: string): ModeChoice {
+  if (isModeChoice(v.toLowerCase())) return v.toLowerCase() as ModeChoice;
+  if (v.toLowerCase() === 'multimodal') return 'voice';
+  return 'voice';
+}
+
+function isPreferencesShape(val: unknown): val is PreferencesShape {
+  return typeof val === 'object' && val !== null && !Array.isArray(val);
+}
+
+/* ---------- Core API ---------- */
+
+export async function setPreferredMode(mode: ModeChoice): Promise<void> {
   const { userId } = await auth();
   if (!userId) throw new Error('Unauthorized');
 
-  const raw = formData.get('mode');
-  if (!isMode(raw)) throw new Error('Invalid mode');
-
   const c = await clerkClient();
-  const current = await c.users.getUser(userId);
-  const prev = (current.publicMetadata ?? {}) as Record<string, unknown>;
+  const u = await c.users.getUser(userId);
 
-  // Store under preferences.mode (and keep a flat alias for backwards-compat)
+  const pm: PublicMetadataShape = (u.publicMetadata ?? {}) as PublicMetadataShape;
+  const prevPrefs: PreferencesShape = isPreferencesShape(pm.preferences) ? pm.preferences : {};
+
+  const nextPrefs: PreferencesShape = { ...prevPrefs, mode };
+
   await c.users.updateUser(userId, {
     publicMetadata: {
-      ...prev,
-      preferredMode: raw,
-      preferences: {
-        ...(typeof prev.preferences === 'object' && prev.preferences !== null
-          ? (prev.preferences as Record<string, unknown>)
-          : {}),
-        mode: raw,
-      },
+      ...pm,
+      preferences: nextPrefs,     // nested (new)
+      preferredMode: mode,        // flat (legacy)
     },
   });
+}
 
-  // Re-render pages/components that read mode from Clerk
-  revalidatePath('/');
+/* ---------- Form Server Action (for <ModeToggle/>) ---------- */
+
+export async function setPreferredModeAction(formData: FormData): Promise<{ ok: true }> {
+  const raw = String(formData.get('mode') ?? '');
+  const mode = coerceMode(raw);
+  await setPreferredMode(mode);
+  return { ok: true };
 }

@@ -1,6 +1,7 @@
 // src/app/components/Hero.tsx
 'use client';
 
+import { useMemo } from 'react';
 import { useUser } from '@clerk/nextjs';
 import VoiceCircle from './VoiceCircle';
 import ChatPane from './chat/ChatPane';
@@ -8,59 +9,63 @@ import ModeToggle from './ModeToggle';
 
 type ModeChoice = 'text' | 'voice' | 'video';
 
-function coerceMode(raw: unknown): ModeChoice {
-  const s = String(raw ?? '').toLowerCase();
-  if (s === 'text' || s === 'voice' || s === 'video') return s;
-  if (s === 'multimodal') return 'voice'; // legacy alias
+type PublicMetadataShape = {
+  preferredMode?: string;
+  mode?: string;
+  preferences?: { mode?: string };
+};
+
+function coerceMode(s: string | undefined | null): ModeChoice {
+  const v = String(s ?? '').toLowerCase();
+  if (v === 'text' || v === 'voice' || v === 'video') return v;
+  if (v === 'multimodal') return 'voice'; // legacy alias
   return 'voice';
 }
 
 export default function Hero() {
   const { user, isLoaded } = useUser();
 
-  // Prefer nested preferences.mode, then preferredMode, then legacy mode
-  const preferredMode: ModeChoice = !isLoaded
-    ? 'voice'
-    : coerceMode(
-        // @ts-expect-error publicMetadata is an untyped bag
-        user?.publicMetadata?.preferences?.mode ??
-        user?.publicMetadata?.preferredMode ??
-        user?.publicMetadata?.mode
-      );
+  // Prefer nested preferences.mode → then flat preferredMode/mode
+  const mode: ModeChoice = useMemo(() => {
+    if (!isLoaded) return 'voice';
+    const pm = (user?.publicMetadata ?? {}) as PublicMetadataShape;
+    const picked = pm.preferences?.mode ?? pm.preferredMode ?? pm.mode ?? '';
+    return coerceMode(picked);
+  }, [isLoaded, user?.publicMetadata]);
 
   return (
-    <section className="glass h-screen flex flex-col items-center justify-center px-6 md:px-10">
-      <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center space-y-8">
-        
-        {/* Mode toggle at top */}
-        <div className="text-center">
-          <ModeToggle value={preferredMode} disabled={!isLoaded} />
-          <p className="mt-2 text-xs text-zinc-500">Switch between text, voice, or video anytime.</p>
+    <section className="sticky top-0 z-10 glass mx-6 md:mx-8 2xl:mx-30 my-6 px-6 md:px-10 py-8 md:py-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-8 items-start">
+        <div>
+          <h1 className="text-3xl md:text-5xl font-bold text-slate-900">
+            AI Counsellor made for <span className="text-green-800">you</span>.
+          </h1>
+          <p className="mt-5 text-slate-700 leading-relaxed">
+            Personalised plans for pregnancy, PCOS, and sustainable weight
+            management—guided by evidence, designed for real life.
+          </p>
+
+          {/* Single source of truth: imported ModeToggle does server-action + hard reload */}
+          <div className="mt-6">
+            <ModeToggle value={mode} disabled={!isLoaded} />
+          </div>
         </div>
 
-        {/* Main content area - centered */}
-        <div className="flex-1 w-full flex items-center justify-center">
-          {!isLoaded ? (
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
-            </div>
-          ) : preferredMode === 'text' ? (
-            <div className="w-full max-w-[600px] h-[70vh]">
+        <div className="flex justify-center">
+          {mode === 'text' ? (
+            <div className="w-full max-w-md">
               <ChatPane />
             </div>
-          ) : preferredMode === 'voice' ? (
-            <div className="flex justify-center">
-              <VoiceCircle backendUrl="/api/audio" />
-            </div>
+          ) : mode === 'voice' ? (
+            <VoiceCircle backendUrl="/api/audio" />
           ) : (
-            <div className="rounded-xl border border-zinc-200 bg-white/60 p-8 text-center max-w-md">
+            <div className="rounded-xl border border-zinc-200 bg-white/60 p-6 text-center">
               <p className="text-sm text-zinc-600">
-                Video mode coming soon. You can switch to voice or text above.
+                Video mode coming soon. You can switch to voice or text in settings.
               </p>
             </div>
           )}
         </div>
-
       </div>
     </section>
   );
