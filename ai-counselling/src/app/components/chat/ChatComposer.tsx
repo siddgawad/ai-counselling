@@ -36,7 +36,14 @@ export default function ChatComposer({
     >
       <textarea
         ref={textareaRef}
-        className="border-input ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 w-full flex items-center h-16 text-base min-h-10 max-h-10 resize-none rounded-none bg-background border-0 shadow-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+        className="border-input ring-offset-background
+         placeholder:text-muted-foreground
+          focus-visible:outline-none focus-visible:ring-ring 
+          disabled:cursor-not-allowed disabled:opacity-50
+           w-full flex items-center h-2 text-base 
+           resize-none rounded-none 
+           bg-background border-0 shadow-none p-0 
+           focus-visible:ring-0 focus-visible:ring-offset-0"
         autoComplete="off"
         name="message"
         placeholder={placeholder}
@@ -52,7 +59,13 @@ export default function ChatComposer({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="inline-flex items-center justify-center whitespace-nowrap text-base font-semibold focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 transition-all bg-accent-grey-default hover:bg-accent-grey-hover active:bg-accent-grey-active focus-visible:bg-accent-grey-active disabled:bg-accent-grey-default/50 disabled:text-foreground/50 p-2 rounded-full w-9 h-9"
+            className="inline-flex items-center justify-center 
+            whitespace-nowrap text-base font-semibold 
+            focus-visible:outline-none disabled:pointer-events-none d
+            isabled:opacity-50 transition-all bg-accent-grey-default 
+            hover:bg-accent-grey-hover active:bg-accent-grey-active 
+            focus-visible:bg-accent-grey-active disabled:bg-accent-grey-default/50 
+            disabled:text-foreground/50 p-2 rounded-full w-9 h-4"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
