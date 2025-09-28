@@ -59,3 +59,7 @@ Important: The app is not a substitute for professional therapy. It’s designed
 - Clerk
 - OpenCV
 - Deepface
+
+## Architecture
+
+![App preview](architecture.png)
