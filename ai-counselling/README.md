@@ -44,35 +44,20 @@ Important: The app is not a substitute for professional therapy. It’s designed
 ## Techstack
 
 ```bash
-Python
-# or
-Typescript
-# or
-Mongodb
-# or
-Huggingface
-# or
-Gemini
-# or
-Fast-API
-# or
-Librosa
-# or
-Pydub
-# or
-Amazon S3
-# or
-Pytorch
-# or
-boto3
-# or
-Numpy
-# or
-Auth
-# or
-Clerk
-# or
-OpenCV
-# or
-Deepface
+- Python
+- Typescript
+- Mongodb
+- Huggingface
+- Gemini
+- Fast-API
+- Librosa
+- Pydub
+- Amazon S3
+- Pytorch
+- boto3
+- Numpy
+- Auth
+- Clerk
+- OpenCV
+- Deepface
 ```bash
