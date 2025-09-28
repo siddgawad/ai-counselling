@@ -1,16 +1,17 @@
-// src/db/audio.ts
 import { getCollection } from '@/lib/mongo';
+
+export type SupportedAudioMime = 'audio/webm' | 'audio/mp4';
 
 export type AudioFrameDoc = {
   _id?: string;
   clerk_user_id: string;
   frameNumber: number;
   ts_ms: number;
-  mime: 'audio/webm';
-  bytes: number;            // size in bytes
-  s3Key?: string;           // Option A
-  gridFsId?: string;        // Option B
-  checksum?: string;        // e.g., sha256 hex
+  mime: SupportedAudioMime;  // <-- was 'audio/webm'
+  bytes: number;
+  s3Key?: string;
+  gridFsId?: string;
+  checksum?: string;
   created_at: Date;
 };
 

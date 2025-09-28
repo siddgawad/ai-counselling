@@ -80,7 +80,7 @@ export default async function OnboardingPage() {
     });
 
     // Done → go to session
-    redirect('/session');
+    redirect('/');
   }
 
   // Render the questionnaire form

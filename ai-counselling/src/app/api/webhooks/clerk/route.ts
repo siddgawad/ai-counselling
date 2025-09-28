@@ -15,7 +15,7 @@ if (!SECRET) {
 
 const EmailSchema = z.object({
   id: z.string(),
-  email_address: z.string().email(), // <-- fix: z.string().email()
+  email_address: z.email(), // <-- fix: z.string().email()
 });
 
 const UserDataSchema = z.object({

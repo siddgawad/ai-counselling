@@ -18,5 +18,5 @@ export default async function SignInRedirector() {
   });
 
   // now redirect to wherever you want
-  redirect('/session');
+  redirect('/onboarding');
 }
