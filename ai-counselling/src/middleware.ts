@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 const isPublic = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
+  '/api/webhooks/clerk(.*)'
   // add truly public routes if you have any:
   // '/', '/privacy'
 ]);
