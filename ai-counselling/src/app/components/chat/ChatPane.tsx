@@ -15,6 +15,8 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import type { JSX } from 'react';
+import axios from "axios";
+import { useUser } from '@clerk/nextjs';
 
 
 /* ---------- Strong types ---------- */
@@ -46,6 +48,10 @@ function linkifyText(s: string): string {
     return `[${m}](${href})`;
   });
 }
+
+ 
+
+
 
 // Typed markdown renderers (no `any`, no unused `node`)
 const mdComponents: Components = {
@@ -103,7 +109,7 @@ export default function ChatPane({
 
   const listRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
-
+ const { isLoaded, user } = useUser();
   // simple id generator
   const nextId = useMemo(() => {
     let n = 0;
@@ -115,60 +121,126 @@ export default function ChatPane({
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async (): Promise<void> => {
-    const text = input.trim();
-    if (!text || loading) return;
+  // const handleSend = async (): Promise<void> => {
+  //   const text = input.trim();
+  //   if (!text || loading) return;
 
-    const userMsg: Message = { id: nextId(), sender: 'user', text, ts: Date.now() };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput('');
+  //   const userMsg: Message = { id: nextId(), sender: 'user', text, ts: Date.now() };
+  //   setMessages((prev) => [...prev, userMsg]);
+  //   setInput('');
 
-    if (!onSend) {
-      // Demo echo
-      setLoading(true);
-      setTimeout(() => {
-        const reply: Message = {
-          id: nextId(),
-          sender: 'assistant',
-          text: "I'm here and listening. (Wire your backend via the `onSend` prop!)",
-          ts: Date.now(),
-        };
-        setMessages((prev) => [...prev, reply]);
-        setLoading(false);
-      }, 600);
-      return;
-    }
+  //   if (!onSend) {
+  //     // Demo echo
+  //     setLoading(true);
+  //     setTimeout(() => {
+  //       const reply: Message = {
+  //         id: nextId(),
+  //         sender: 'assistant',
+  //         text: "I'm here and listening. (Wire your backend via the `onSend` prop!)",
+  //         ts: Date.now(),
+  //       };
+  //       setMessages((prev) => [...prev, reply]);
+  //       setLoading(false);
+  //     }, 600);
+  //     return;
+  //   }
 
-    try {
-      setLoading(true);
-      const replyText = await onSend(text);
-      const reply: Message = {
-        id: nextId(),
-        sender: 'assistant',
-        text: replyText,
-        ts: Date.now(),
-      };
-      setMessages((prev) => [...prev, reply]);
-    } catch {
-      const err: Message = {
-        id: nextId(),
-        sender: 'assistant',
-        text: 'Sorry, something went wrong. Please try again.',
-        ts: Date.now(),
-      };
-      setMessages((prev) => [...prev, err]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  //   try {
+  //     setLoading(true);
+  //     const replyText = await onSend(text);
+  //     const reply: Message = {
+  //       id: nextId(),
+  //       sender: 'assistant',
+  //       text: replyText,
+  //       ts: Date.now(),
+  //     };
+  //     setMessages((prev) => [...prev, reply]);
+  //   } catch {
+  //     const err: Message = {
+  //       id: nextId(),
+  //       sender: 'assistant',
+  //       text: 'Sorry, something went wrong. Please try again.',
+  //       ts: Date.now(),
+  //     };
+  //     setMessages((prev) => [...prev, err]);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      void handleSend();
-    }
-  };
+   // inside your Chat component
+//   const handleSend = async (text: string): Promise<string> => {
+//   try {
+//     const res = await post("http://localhost:8000/respond", {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({
+//         msg: text,
+//         user_id: "user_123",
+//       }),
+//     });
 
+//     const data = await res.json();
+//     return data["final_response"] || "No response generated.";
+//   } catch (err) {
+//     console.error("Error calling /respond:", err);
+//     return "Sorry, something went wrong.";
+//   }
+// };
+
+const handleSend = async (text: string): Promise<void> => {
+  const trimmed = text.trim();
+  if (!trimmed || loading) return;
+
+  // Add user message
+  const userMsg: Message = { id: nextId(), sender: 'user', text: trimmed, ts: Date.now() };
+  setMessages((prev) => [...prev, userMsg]);
+  setInput('');
+  setLoading(true);
+
+  try {
+    // Call backend
+    const res = await axios.post("http://localhost:8000/respond", null, {
+     
+      params: { msg: trimmed, user_id: user?.id },
+    });
+
+    const replyText: string = res.data?.final_response || "No response generated.";
+
+    // Add assistant reply
+    const assistantMsg: Message = {
+      id: nextId(),
+      sender: 'assistant',
+      text: replyText,
+      ts: Date.now(),
+    };
+    setMessages((prev) => [...prev, assistantMsg]);
+  } catch (err) {
+    console.error("Error calling backend:", err);
+    const errMsg: Message = {
+      id: nextId(),
+      sender: 'assistant',
+      text: "Sorry, something went wrong.",
+      ts: Date.now(),
+    };
+    setMessages((prev) => [...prev, errMsg]);
+  } finally {
+    setLoading(false);
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }
+};
+
+
+
+
+const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    void handleSend(input); // 👈 pass your current input state here
+  }
+};
+
+ 
   return (
     <div className="flex h-[450px] w-full max-w-[700x] flex-col rounded-xl border border-zinc-200 bg-white/70 p-3 shadow-sm backdrop-blur">
       {/* Messages */}
@@ -202,7 +274,7 @@ export default function ChatPane({
         />
         <div className="mt-2 flex items-center justify-end">
           <button
-            onClick={() => void handleSend()}
+            onClick={() => void handleSend(input)}
             disabled={!input.trim() || loading}
             className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Send"
