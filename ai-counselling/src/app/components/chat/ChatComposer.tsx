@@ -17,46 +17,19 @@ export default function ChatComposer({
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // const handleSubmit = useCallback(
-  //   async (e: FormEvent<HTMLFormElement>) => {
-  //     e.preventDefault();
-  //     const trimmed = value.trim();
-  //     if (!trimmed) return;
-  //     await onSend(trimmed);
-  //     setValue('');
-  //     textareaRef.current?.focus();
-  //   },
-  //   [onSend, value],
-  // );
-
   const handleSubmit = useCallback(
-  async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const trimmed = value.trim();
-    if (!trimmed) return;
+    async (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const trimmed = value.trim();
+      if (!trimmed) return;
+      await onSend(trimmed);
+      setValue('');
+      textareaRef.current?.focus();
+    },
+    [onSend, value],
+  );
 
-    try {
-      const res = await fetch("/respond", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          msg: trimmed,
-          user_id: "user_123", 
-        }),
-      });
-
-      const data = await res.json();
-      await onSend(data['final_response'] || "No response generated.");
-    } catch (err) {
-      console.error("Error calling /respond:", err);
-      await onSend("Sorry, something went wrong.");
-    }
-
-    setValue("");
-    textareaRef.current?.focus();
-  },
-  [onSend, value]
-);
+  
 
 
   return (

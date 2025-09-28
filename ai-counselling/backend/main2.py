@@ -145,7 +145,7 @@ def speech_to_text(path: str):
 
 
 @app.post("/respond")
-def respond(msg: str, user_id):
+def respond(msg, user_id):
     if is_high_risk(msg):
         reply = ("I'm really glad you reached out. Your safety matters. "
                  "If you’re in immediate danger, call your local emergency number now. "
