@@ -43,7 +43,6 @@ Important: The app is not a substitute for professional therapy. It’s designed
 
 ## Techstack
 
-```bash
 - Python
 - Typescript
 - Mongodb
@@ -60,4 +59,3 @@ Important: The app is not a substitute for professional therapy. It’s designed
 - Clerk
 - OpenCV
 - Deepface
-```bash
