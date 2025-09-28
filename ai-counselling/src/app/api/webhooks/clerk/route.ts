@@ -6,7 +6,7 @@ import { upsertUserFromClerk } from '@/db/users';
 import { getDb } from '@/lib/mongo';
 
 // Make the secret non-nullable for TS
-const SECRET = process.env.CLERK_WEBHOOK_SECRET!;
+const SECRET = process.env.CLERK_SECRET_KEY!;
 if (!SECRET) {
   throw new Error('CLERK_WEBHOOK_SECRET is not set');
 }
