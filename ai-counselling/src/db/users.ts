@@ -96,7 +96,13 @@ export async function upsertUserFromClerk(input: {
     { clerk_user_id: input.clerk_user_id },
     {
       $setOnInsert: { created_at: now },
-      $set: { ...input, updated_at: now },
+      $set: {
+        email: input.email,
+        first_name: input.first_name,
+        last_name: input.last_name,
+        image_url: input.image_url,
+        updated_at: now,
+      },
     },
     { upsert: true },
   );
@@ -121,3 +127,5 @@ export async function saveOnboarding(params: {
     { upsert: true },
   );
 }
+
+

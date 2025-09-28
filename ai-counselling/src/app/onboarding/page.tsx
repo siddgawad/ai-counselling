@@ -61,7 +61,7 @@ export default async function OnboardingPage() {
   const client = await clerkClient();
   const clerkUser = await client.users.getUser(userId);
 
-  if (clerkUser.publicMetadata?.onboarded) redirect('/');
+  // if (clerkUser.publicMetadata?.onboarded) redirect('/');
 
   await upsertUserFromClerk({
     clerk_user_id: userId,
@@ -83,10 +83,23 @@ export default async function OnboardingPage() {
     await saveOnboarding({ clerk_user_id: userId, data: parsed });
 
     // flag in Clerk
+    function normalizeMode(m: string): 'text' | 'voice' | 'video' {
+      // Backward-compat: treat old "multimodal" as "voice"
+      if (m === 'multimodal') return 'voice';
+      if (m === 'text' || m === 'voice' || m === 'video') return m;
+      return 'voice';
+    }
+    
     const c = await clerkClient();
-    const u = await c.users.getUser(userId);
-    await c.users.updateUser(userId, { publicMetadata: { ...(u.publicMetadata ?? {}), onboarded: true } });
-
+    const current = await c.users.getUser(userId);
+    
+    await c.users.updateUser(userId, {
+      publicMetadata: {
+        ...(current.publicMetadata ?? {}),
+        onboarded: true,
+        preferredMode: normalizeMode(parsed.mode), // parsed.mode from your schema/wizard
+      },
+    });
     redirect('/');
   }
 
