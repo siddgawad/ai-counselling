@@ -35,3 +35,4 @@ ENV/
 *.log
 *.tmp
 EOF
+.env
