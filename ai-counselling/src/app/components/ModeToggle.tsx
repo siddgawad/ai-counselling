@@ -2,8 +2,7 @@
 'use client';
 
 import { useTransition } from 'react';
-import type { ModeChoice } from '@/app/actions/preferences';
-import { setPreferredModeAction } from '@/app/actions/preferences';
+import { setPreferredModeAction, type ModeChoice } from '@/app/actions/preferences';
 
 type Props = {
   value: ModeChoice;   // current mode
@@ -17,12 +16,11 @@ export default function ModeToggle({ value, disabled = false }: Props) {
     const fd = new FormData();
     fd.append('mode', next);
 
-    // Server action + hard refresh
     startTransition(async () => {
       try {
         await setPreferredModeAction(fd);
       } finally {
-        // Force a full document reload so Hero re-reads Clerk metadata
+        // Force a full reload so Hero re-reads Clerk publicMetadata immediately
         window.location.reload();
       }
     });
