@@ -32,7 +32,7 @@ app.add_middleware(
 )
 
 
-genai.configure(api_key="AIzaSyDaO-9ggQ5u6Ru8sAjzAvizUFa-V9fyqd0")
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY", ""))
 
 model = genai.GenerativeModel('gemini-2.5-flash')
 load_dotenv()
