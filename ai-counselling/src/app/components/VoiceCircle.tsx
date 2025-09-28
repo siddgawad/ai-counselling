@@ -92,7 +92,7 @@ const VoiceCircle: React.FC<Props> = ({
   // one-in-flight sender with queue size = 1 (always send newest)
   const sendLoop = async () => {
     try {
-      // eslint-disable-next-line no-constant-condition
+     
       while (true) {
         const next = pendingRef.current;
         if (!next) break; // nothing to send
@@ -130,7 +130,7 @@ const VoiceCircle: React.FC<Props> = ({
   // cleanup on unmount
   useEffect(() => {
     return () => stop();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+ 
   }, []);
 
   // Tailwind-powered circle with green hero palette; minimal-only circle (no X / no text)

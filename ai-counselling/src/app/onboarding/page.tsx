@@ -2,38 +2,67 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { saveOnboarding, OnboardingPayload, upsertUserFromClerk } from '@/db/users';
+import { saveOnboarding, upsertUserFromClerk, type OnboardingPayload } from '@/db/users';
 
-const OnboardingSchema = z.object({
+const scale = z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4)]);
+const ageRange = z.enum(['<18', '18-24', '25-35', '40-50', '>50']);
+const mode = z.enum(['text', 'voice', 'video']);
+const yesNoPns = z.enum(['yes', 'no', 'prefer_not_to_say']);
+
+const PayloadSchema = z.object({
   fullName: z.string().min(1).max(120),
-  age: z
-    .string()
-    .optional()
-    .transform((v) => (v && v.trim() !== '' ? Number(v) : undefined))
-    .refine((v) => (v === undefined ? true : (Number.isInteger(v) && v >= 13 && v <= 120)), {
-      message: 'Age must be between 13 and 120',
-    }),
-  goals: z
-    .array(z.string())
-    .optional()
-    .transform((g) => (g && g.length ? g : [])),
-  mode: z.enum(['text', 'multimodal']).default('multimodal'),
-  timezone: z.string().optional(),
+  ageRange: ageRange,
+
+  immediateDanger: yesNoPns,
+  selfHarmThoughts: scale,
+
+  mode: mode,
+
+  concernsText: z.string().optional(),
+  concerns: z.array(z.string()).default([]),
+  goalsText: z.string().optional(),
+
+  crossCutting: z.object({
+    pleasure: scale, lowMood: scale, irritability: scale, activation: scale,
+    anxiety: scale, avoidance: scale, somatic: scale, psychosisLike: scale,
+    sleepProblems: scale, cognition: scale, ocdLike: scale, dissociation: scale,
+    substance: scale,
+  }),
+
+  functioning: z.object({
+    understanding: scale, mobility: scale, selfCare: scale, gettingAlong: scale,
+    lifeActivities: scale, participation: scale,
+  }),
+
+  identityContext: z.string().optional(),
+  meaningMaking: z.string().optional(),
+  stressesSupports: z.string().optional(),
+
+  medicalDx: z.string().optional(),
+  meds: z.string().optional(),
+  sleep: z.string().optional(),
+  substances: z.object({
+    caffeine: z.string().optional(),
+    alcohol: z.string().optional(),
+    nicotine: z.string().optional(),
+    cannabis: z.string().optional(),
+  }).optional(),
+  movement: z.string().optional(),
+
+  strengths: z.string().optional(),
+  preferences: z.array(z.enum(['guided', 'mindfulness', 'journaling', 'short_checkins'])).default([]),
+  nudges: z.enum(['daily', '2-3x/week', 'weekly']),
 });
 
 export default async function OnboardingPage() {
   const { userId, redirectToSignIn } = await auth();
-  if (!userId) return redirectToSignIn({ returnBackUrl: '/onboarding' });
+  if (!userId) return redirectToSignIn({ returnBackUrl: '/sign-in/' });
 
-  // Fetch Clerk user
   const client = await clerkClient();
   const clerkUser = await client.users.getUser(userId);
 
-  // If already onboarded, skip this page
-  const alreadyOnboarded = Boolean(clerkUser.publicMetadata?.onboarded);
-  if (alreadyOnboarded) redirect('/session');
+  if (clerkUser.publicMetadata?.onboarded) redirect('/');
 
-  // Ensure a user document exists in Mongo (idempotent upsert)
   await upsertUserFromClerk({
     clerk_user_id: userId,
     email: clerkUser.primaryEmailAddress?.emailAddress ?? null,
@@ -42,96 +71,34 @@ export default async function OnboardingPage() {
     image_url: clerkUser.imageUrl ?? null,
   });
 
-  // --- Server Action: handles form submit ---
+  // ----- server action -----
   async function submit(formData: FormData) {
     'use server';
     const { userId } = await auth();
     if (!userId) throw new Error('Unauthorized');
 
-    // Collect raw values from the form
-    const raw = {
-      fullName: formData.get('fullName')?.toString() ?? '',
-      age: formData.get('age')?.toString(),
-      // getAll returns FormDataEntryValue[], cast to strings
-      goals: (formData.getAll('goals') as string[]) ?? [],
-      mode: (formData.get('mode') as 'text' | 'multimodal') ?? 'multimodal',
-      timezone: formData.get('timezone')?.toString(),
-    };
+    const json = formData.get('payload')?.toString() ?? '';
+    const parsed = PayloadSchema.parse(JSON.parse(json)) as OnboardingPayload;
 
-    // Validate & coerce using Zod
-    const parsed = OnboardingSchema.parse(raw);
+    await saveOnboarding({ clerk_user_id: userId, data: parsed });
 
-    const payload: OnboardingPayload = {
-      fullName: parsed.fullName,
-      age: parsed.age,
-      goals: parsed.goals,
-      mode: parsed.mode,
-      timezone: parsed.timezone,
-    };
-
-    // Persist to Mongo
-    await saveOnboarding({ clerk_user_id: userId, data: payload });
-
-    // Merge-safe update to Clerk publicMetadata
+    // flag in Clerk
     const c = await clerkClient();
-    const current = await c.users.getUser(userId);
-    await c.users.updateUser(userId, {
-      publicMetadata: { ...(current.publicMetadata ?? {}), onboarded: true },
-    });
+    const u = await c.users.getUser(userId);
+    await c.users.updateUser(userId, { publicMetadata: { ...(u.publicMetadata ?? {}), onboarded: true } });
 
-    // Done → go to session
     redirect('/');
   }
 
-  // Render the questionnaire form
   return (
-    <form action={submit} className="mx-auto max-w-2xl space-y-6 p-6 bg-white/80 rounded-xl">
-      <h1 className="text-2xl font-semibold">Onboarding</h1>
-
-      <div className="space-y-2">
-        <label className="block text-sm font-medium" htmlFor="fullName">Full name</label>
-        <input id="fullName" name="fullName" defaultValue={clerkUser.fullName ?? ''}
-               className="w-full rounded border px-3 py-2" required />
-      </div>
-
-      <div className="space-y-2">
-        <label className="block text-sm font-medium" htmlFor="age">Age</label>
-        <input id="age" type="number" name="age" min={13} max={120}
-               className="w-full rounded border px-3 py-2" />
-      </div>
-
-      <div className="space-y-2">
-        <p className="block text-sm font-medium">Goals</p>
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          {['stress', 'sleep', 'focus', 'mood', 'confidence', 'relationships'].map((g) => (
-            <label key={g} className="inline-flex items-center gap-2">
-              <input type="checkbox" name="goals" value={g} /> <span className="capitalize">{g}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <p className="block text-sm font-medium">Mode</p>
-        <div className="flex items-center gap-4 text-sm">
-          <label className="inline-flex items-center gap-2">
-            <input type="radio" name="mode" value="text" /> Text-only
-          </label>
-          <label className="inline-flex items-center gap-2">
-            <input type="radio" name="mode" value="multimodal" defaultChecked /> Camera + Mic
-          </label>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <label className="block text-sm font-medium" htmlFor="timezone">Time zone</label>
-        <input id="timezone" name="timezone" placeholder="e.g., America/Detroit"
-               className="w-full rounded border px-3 py-2" />
-      </div>
-
-      <button type="submit" className="rounded bg-green-700 px-4 py-2 text-white">
-        Continue
-      </button>
-    </form>
+    <div className="max-w-2xl mx-auto">
+      <OnboardingWizard
+        defaultName={clerkUser.fullName ?? ''}
+        action={submit}
+      />
+    </div>
   );
 }
+
+// Mark the client wizard import
+import OnboardingWizard from './wizard';
