@@ -3,8 +3,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 type Props = {
-  backendUrl?: string;     // Your Next route (server-side upload)
-  size?: number;           // Diameter in px
+  userId: string;              // <-- add
+  uploadUrl?: string;          // <-- add (default to /api/uploadAudio)
+  size?: number;
 };
 
 type PendingFrame = {
@@ -14,21 +15,19 @@ type PendingFrame = {
 };
 
 const VoiceCircle: React.FC<Props> = ({
-  backendUrl = '/api/audio',
+  userId,
+  uploadUrl = '/api/uploadAudio',
   size = 200,
 }) => {
   const [isListening, setIsListening] = useState(false);
 
-  // media
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
 
-  // backpressure (one in-flight; queue size = 1 newest)
   const seqRef = useRef(0);
   const sendingRef = useRef<Promise<void> | null>(null);
   const pendingRef = useRef<PendingFrame | null>(null);
 
-  // start recording with 3s timeslices; ondataavailable emits each chunk
   const start = async () => {
     if (recorderRef.current) return;
     try {
@@ -41,7 +40,6 @@ const VoiceCircle: React.FC<Props> = ({
       });
       streamRef.current = stream;
 
-      // Prefer webm/opus (Chrome/Edge). Safari/iOS may fall back; you can extend your API to accept mp4 too.
       const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
         : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
@@ -50,25 +48,21 @@ const VoiceCircle: React.FC<Props> = ({
 
       mr.ondataavailable = (ev) => {
         if (!ev.data || ev.data.size === 0) return;
-        // queue newest (replace if something pending)
         pendingRef.current = {
           blob: ev.data,
           tsMs: Date.now(),
           seq: seqRef.current++,
         };
-        // kick the sender loop if idle
         if (!sendingRef.current) {
           sendingRef.current = sendLoop();
         }
       };
 
       mr.onstart = () => {
-        // reset counters on a fresh start
         seqRef.current = 0;
       };
 
       recorderRef.current = mr;
-      // timeslice = 3000ms → browser emits a chunk every ~3s
       mr.start(3000);
       setIsListening(true);
     } catch (e) {
@@ -89,49 +83,39 @@ const VoiceCircle: React.FC<Props> = ({
     }
   };
 
-  // one-in-flight sender with queue size = 1 (always send newest)
   const sendLoop = async () => {
     try {
-     
       while (true) {
         const next = pendingRef.current;
-        if (!next) break; // nothing to send
-        // consume it
+        if (!next) break;
         pendingRef.current = null;
 
+        const file = new File([next.blob], `frame_${next.seq}.webm`, { type: next.blob.type || 'audio/webm' });
         const form = new FormData();
-        form.append('audio', next.blob, `frame_${next.seq}.webm`);
+        form.append('file', file);                      // <-- renamed to 'file'
+        form.append('userId', userId);                 // <-- include userId
         form.append('timestamp', String(next.tsMs));
-        form.append('frameNumber', String(next.seq));
+        form.append('frameId', String(next.seq));
 
-        const res = await fetch(backendUrl, { method: 'POST', body: form });
+        const res = await fetch(uploadUrl, { method: 'POST', body: form });
         if (!res.ok) {
           console.error('Upload failed', res.status, await res.text().catch(() => ''));
-          // continue; we intentionally don’t requeue old frames
         }
-        // loop to see if a newer one arrived during upload
       }
     } finally {
-      // mark sender idle
       sendingRef.current = null;
-      // if something arrived while we were clearing, restart
       if (pendingRef.current && !sendingRef.current) {
         sendingRef.current = sendLoop();
       }
     }
   };
 
-  // click to toggle like GPT voice
   const onClick = () => {
     if (!isListening) start();
     else stop();
   };
 
-  // cleanup on unmount
-  useEffect(() => {
-    return () => stop();
- 
-  }, []);
+  useEffect(() => () => stop(), []);
 
   // Tailwind-powered circle with green hero palette; minimal-only circle (no X / no text)
   return (
