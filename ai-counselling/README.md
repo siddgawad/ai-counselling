@@ -40,3 +40,22 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 This is a virtual mental-health companion that supports people through text, voice, and video. Beyond conversation, it analyzes facial expressions, vocal tone, and text sentiment to form a more complete picture of how you’re doing. With that context, it offers supportive reflections, grounding exercises, and resource suggestions—aimed at helping you feel better and make informed choices.
 The experience is gentle, private, and accessible, especially for people who might hesitate to seek help in person.
 Important: The app is not a substitute for professional therapy. It’s designed to complement care and encourage seeking licensed help when appropriate.
+
+## Techstack
+
+Python
+Typescript
+Mongodb
+Huggingface
+Gemini
+Fast-API
+Librosa
+Pydub
+Amazon S3
+Pytorch
+boto3
+Numpy
+Auth
+Clerk
+OpenCV
+Deepface
